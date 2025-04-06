@@ -1,0 +1,190 @@
+# Power BI Model for Financial Analysis
+
+## Data Model Structure
+
+### Tables
+1. **Transactions**
+   - Transaction ID (Key)
+   - Date
+   - Name/Description
+   - Amount
+   - Category
+   - Subcategory
+   - Account ID (Foreign Key)
+   - Pending Status
+
+2. **Accounts**
+   - Account ID (Key)
+   - Account Name
+   - Account Type
+   - Institution
+   - Balance
+
+3. **Categories** (Dimension Table)
+   - Category ID (Key)
+   - Category Name
+   - Category Group (Income, Expense, Transfer)
+
+4. **Date** (Dimension Table)
+   - Date (Key)
+   - Day
+   - Week
+   - Month
+   - Quarter
+   - Year
+   - Day of Week
+   - Is Weekend
+   - Is Holiday
+
+### Relationships
+- Transactions to Accounts (Many to One)
+- Transactions to Categories (Many to One)
+- Transactions to Date (Many to One)
+
+## DAX Measures
+
+```
+// Total Income
+Total Income = 
+CALCULATE(
+    SUM(Transactions[Amount]),
+    Categories[Category Group] = "Income"
+)
+
+// Total Expenses
+Total Expenses = 
+CALCULATE(
+    SUM(Transactions[Amount]),
+    Categories[Category Group] = "Expense"
+)
+
+// Net Cash Flow
+Net Cash Flow = [Total Income] - [Total Expenses]
+
+// Monthly Average Expense
+Monthly Average Expense = 
+CALCULATE(
+    AVERAGEX(
+        VALUES(Date[Month]),
+        [Total Expenses]
+    )
+)
+
+// Spending by Category
+Spending by Category = 
+CALCULATE(
+    SUM(Transactions[Amount]),
+    Categories[Category Group] = "Expense"
+)
+
+// Month-over-Month Growth
+MoM Growth = 
+VAR CurrentMonthCashFlow = 
+    CALCULATE(
+        [Net Cash Flow],
+        FILTER(
+            ALL(Date),
+            Date[Month] = MAX(Date[Month])
+        )
+    )
+VAR PreviousMonthCashFlow = 
+    CALCULATE(
+        [Net Cash Flow],
+        FILTER(
+            ALL(Date),
+            Date[Month] = MAX(Date[Month]) - 1
+        )
+    )
+RETURN
+    DIVIDE(
+        CurrentMonthCashFlow - PreviousMonthCashFlow,
+        ABS(PreviousMonthCashFlow),
+        0
+    )
+```
+
+## Visualization Pages
+
+### 1. Dashboard Overview
+- KPIs: Total Income, Total Expenses, Net Cash Flow, and Monthly Average Expense
+- Line chart showing income and expenses over time
+- Donut chart for expense breakdown by category
+- Month-over-Month growth card
+
+### 2. Income Analysis
+- Monthly income trend
+- Income sources breakdown
+- Day of week income pattern
+- Income forecast for next 3 months
+
+### 3. Expense Analysis
+- Monthly expense trend
+- Top spending categories
+- Daily spending patterns
+- Weekend vs. Weekday spending comparison
+
+### 4. Budget Tracking
+- Budget vs. Actual spending by category
+- Cumulative spending against monthly budget
+- Variance analysis
+- Budget alerts for categories exceeding thresholds
+
+### 5. Financial Health
+- Savings rate calculation
+- Expense to Income ratio
+- Discretionary vs. Non-discretionary spending
+- Financial goal tracking
+
+## Implementation Steps
+
+1. **Import Data**
+   - Import the CSV file exported from your Plaid application
+   - Set up data refresh schedule if using Power BI service
+
+2. **Transform Data**
+   - Clean transaction descriptions
+   - Categorize transactions using Power Query
+   - Create the date dimension table
+
+3. **Create Relationships**
+   - Set up the proper relationships between tables as described above
+
+4. **Add Calculated Measures**
+   - Implement all the DAX measures listed above
+
+5. **Build Visualizations**
+   - Create the five dashboard pages
+   - Set up drill-through actions
+   - Add filters and slicers for interactive analysis
+
+6. **Set Up Alerts**
+   - Configure alerts for budget overruns
+   - Set up data-driven alerts for unusual spending
+
+## Advanced Features
+
+### Forecasting
+Use Power BI's built-in forecasting capabilities to predict future expenses and income based on historical data.
+
+```
+// Forecast Expense Next Month
+Forecast Expense Next Month = 
+FORECAST(
+    NEXTMONTH(MAX(Date[Date])),
+    Transactions[Amount],
+    Date[Date]
+)
+```
+
+### What-If Parameters
+Create what-if parameters to model different financial scenarios:
+- Impact of reducing specific category spending
+- Savings projection with different income levels
+- Debt payoff timelines with different payment amounts
+
+### Custom Visuals
+Consider using these custom visuals from the Power BI marketplace:
+- Financial reporting visuals
+- Sankey diagrams for cash flow visualization
+- Advanced forecast visuals
+- Budget vs. Actual gauges
